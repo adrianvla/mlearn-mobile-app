@@ -102,6 +102,7 @@ export function displayFlashcard(card){
             },
             "dueDate":1755100026393,
             "lastReviewed":1755100026393,
+            "lastUpdated":1755100026393,
             "ease":0,
             "reviews":0
         }
