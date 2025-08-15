@@ -613,7 +613,7 @@ body.dark .pill{
 }
 
 
-.loading, .content > div:not(.card-c){
+.loading, .content > div:not(.card-c), .text{
     color: #ccc;
     font-family: "Helvetica Neue", "Arial", sans-serif;
     font-size:0.75em;
@@ -680,4 +680,8 @@ button{
     position:absolute;
     opacity:0.5;
     z-index:99;
+}
+.content{
+    display:flex;
+    flex-direction: column;
 }

@@ -64,6 +64,7 @@ function getAnticipatedDueDate(_fc, q) {
     fc.ease = newEF;
     fc.lastReviewed = now;
     fc.dueDate = now + interval;
+    fc.lastUpdated = now;
     if (q >= 3) {
         fc.reviews = (typeof fc.reviews === 'number' ? fc.reviews : 0) + 1;
     }
@@ -192,6 +193,23 @@ export const review = () => {
     });
     $(".btn.bin").on('click',()=>removeFlashcard());
     $(".btn.close").on('click',displayHomeScreen);
-    console.log($(".btn.show-answer"))
+    let isInEditMode = false;
+    $(".editMode").hide();
+    $(".btn.edit").on('click',()=>{
+        if(isInEditMode){
+            $(".editMode").hide();
+            $(".can-be-edited").attr("contenteditable", "false");
+            fs.flashcards[0].content.translation = $(".answer").text();
+            fs.flashcards[0].content.example = $(".sentence").html();
+            fs.flashcards[0].content.exampleMeaning = $(".example .translation p").html();
+            fs.flashcards[0].content.definition = $(".definition").html();
+            fs.flashcards[0].lastUpdated = Date.now();
+            fs = sortByDueDate(fs);
+        }else{
+            $(".can-be-edited").attr("contenteditable", "true");
+            $(".editMode").text("Edit Mode").show();
+        }
+        isInEditMode = !isInEditMode;
+    });
 
 };
