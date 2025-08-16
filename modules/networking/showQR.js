@@ -25,7 +25,7 @@ function splitInChunks(str, n) {
 let chunkedData = [];
 let chunkIndex = 0;
 let chunkInterval = null;
-const numberOfChunks = 30;
+export const numberOfChunks = 30;
 export function transmitByQRChunks(data){
     clearInterval(chunkInterval);
     chunkIndex = 0;

@@ -1,14 +1,12 @@
 import {displayScreen} from "../screens/displayScreen.js";
 import SimplePeer from "../../lib/simplepeer.min.js";
 import {stopDetection} from "./startConnectionByQR.js";
-import {stopTransmitByQRChunks, transmitByQRChunks} from "./showQR.js";
+import {numberOfChunks, stopTransmitByQRChunks, transmitByQRChunks} from "./showQR.js";
 import {setFlashcards, startSync} from "./transmit.js";
 import {overwriteWordFreq} from "../SRS/storage.js";
 import $ from '../../lib/jquery.min.js';
 
 let p = null;
-
-const numberOfChunks = 10;
 
 let collectedChunks = {};
 
