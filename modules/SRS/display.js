@@ -113,6 +113,7 @@ export function displayFlashcard(card){
     $(".definition").html(card.content.definition);
     $(".card-item:has(.definition)").hide();
     $(".example .translation p").html("");
+    $(".card-item img").attr("src", card.content.screenshotUrl);
     const wordFreq = getWordFreq();
     console.log(typeof wordFreq);
     if(card.content.word in wordFreq)

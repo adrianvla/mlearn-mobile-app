@@ -3,7 +3,23 @@ import {displayFlashcard, revealAnswer} from "./display.js";
 import $ from '../../lib/jquery.min.js';
 import {displayHomeScreen} from "../screens/home.js";
 import {displayScreen} from "../screens/displayScreen.js";
+async function toUniqueIdentifier(nonLatinString) {
+    // Encode the string into Base64 (handles Unicode safely)
+    const utf8Bytes = new TextEncoder().encode(nonLatinString);
+    const base64String = btoa(String.fromCharCode(...utf8Bytes));
 
+    // Hash the Base64 string using SHA-256
+    const hashBuffer = await crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode(base64String)
+    );
+
+    // Convert the hash to a hexadecimal string
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(byte => byte.toString(16).padStart(2, "0")).join("");
+
+    return hashHex;
+}
 function sortByDueDate(fs) {
     if(fs?.flashcards == undefined) {
         displayScreen("home");
@@ -148,8 +164,10 @@ export const review = () => {
         fs.flashcards[0] = updateDueDate(fs.flashcards[0], q);
         displayLast();
     }
-    function removeFlashcard(){
+    async function removeFlashcard(){
         if(fs.flashcards.length === 0) return;
+        const uuid = await toUniqueIdentifier(fs.flashcards[0].content.word);
+        fs.knownUnTracked[uuid] = true;
         fs.flashcards.shift();
         displayLast();
     }
