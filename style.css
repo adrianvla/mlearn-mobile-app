@@ -698,6 +698,9 @@ button{
     font-size: 0.8em;
     display:flex;
 }
+.example .mLearn-pitch-accent{
+    height: unset !important;
+}
 .mLearn-pitch-accent .box{
     width: 100%;
     height: 100%;
