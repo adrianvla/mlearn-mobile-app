@@ -2,6 +2,7 @@ import $ from '../../lib/jquery.min.js';
 import jsQR from '../../lib/jsqr.min.js';
 import {displayScreen} from "../screens/displayScreen.js";
 import {collectChunk, connectUsingData} from "./connectUsingData.js";
+import {setNumberOfChunks} from "./showQR.js";
 
 let stopVideo = false;
 let stopCamera = null;
@@ -13,6 +14,7 @@ export const startConnectionByQR = () => {
     if (!video) return;
     video.style.display = 'block';
     stopVideo = false;
+    setNumberOfChunks(parseInt(prompt("Enter the number shown on the mLearn app's window:")));
 
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
         .then(s => {
