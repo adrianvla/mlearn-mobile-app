@@ -1,7 +1,7 @@
 import {displayScreen} from "../screens/displayScreen.js";
 import SimplePeer from "../../lib/simplepeer.min.js";
 import {stopDetection} from "./startConnectionByQR.js";
-import {numberOfChunks, stopTransmitByQRChunks, transmitByQRChunks} from "./showQR.js";
+import {NumberOfChunks, setNumberOfChunks, stopTransmitByQRChunks, transmitByQRChunks} from "./showQR.js";
 import {setFlashcards, startSync} from "./transmit.js";
 import {overwriteWordFreq} from "../SRS/storage.js";
 import $ from '../../lib/jquery.min.js';
@@ -16,13 +16,13 @@ export const collectChunk = (chunk)=>{
         return;
     }
     collectedChunks[chunk[0]] = chunk[1];
-    console.log("Collected chunk " + chunk[0] + " of " + numberOfChunks);
-    $(".camera .progress-bar .easy").css("width", (Object.keys(collectedChunks).length / numberOfChunks) * 100 + "%");
-    if(Object.keys(collectedChunks).length === numberOfChunks){
+    console.log("Collected chunk " + chunk[0] + " of " + NumberOfChunks());
+    $(".camera .progress-bar .easy").css("width", (Object.keys(collectedChunks).length / NumberOfChunks()) * 100 + "%");
+    if(Object.keys(collectedChunks).length === NumberOfChunks()){
         console.log("All chunks collected");
         //concat data
         let data = "";
-        for(let i = 0; i < numberOfChunks; i++){
+        for(let i = 0; i < NumberOfChunks(); i++){
             data += collectedChunks[i];
         }
         console.log(collectedChunks, JSON.parse(data));
