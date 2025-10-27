@@ -78,7 +78,9 @@ export const connectUsingData = (data) =>{
     function onTransmissionEnd(name,data){
         switch(name){
             case "sync":
-                console.log(data);
+                // console.log(data);
+                //truncate data before printing it to console
+                console.log(data.substring(0, 1000));
                 setFlashcards(JSON.parse(data));
                 break;
             case "wordFreq":
@@ -89,7 +91,7 @@ export const connectUsingData = (data) =>{
 
     function processEvent(d){
         d = JSON.parse(d);
-        console.log("Got event", d);
+        // console.log("Got event", d);
         switch(d.type){
             case "ping":
                 break;
