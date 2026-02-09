@@ -493,7 +493,7 @@ body:not(.dark) .nav .btn svg{
     display: grid;
     grid-auto-columns: 1fr;
     grid-template-columns: 1fr 1fr 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: 1fr;
     gap:10px;
     position:absolute;
     bottom:0;
@@ -505,9 +505,7 @@ body:not(.dark) .nav .btn svg{
 .hard { grid-area: 1 / 2 / 2 / 3; }
 .ok { grid-area: 1 / 3 / 2 / 4; }
 .easy { grid-area: 1 / 4 / 2 / 5; }
-.postpone { grid-area: 2 / 1 / 3 / 3; }
-.already-known { grid-area: 2 / 3 / 3 / 5; }
-.show-answer { grid-area: 1 / 1 / 3 / 5; }
+.show-answer { grid-area: 1 / 1 / 2 / 5; }
 
 .buttons .btn{
     padding:10px;
@@ -533,10 +531,6 @@ body:not(.dark) .nav .btn svg{
     font-size:0.5em;
     white-space: nowrap;
     text-shadow: 0 0 25px #000;
-}
-.buttons .btn.under-text::after{
-    top:unset !important;
-    bottom:-1.5em;
 }
 body:not(.dark) .buttons .btn::after{
     color:#111;
@@ -571,19 +565,11 @@ body:not(.dark) .medium{
 body:not(.dark) .easy{
     background: var(--dim-green);
 }
-.buttons .btn.already-known{
-    background: var(--blue);
-    filter:hue-rotate(230deg);
-}
 .buttons .btn.show-answer{
     background: var(--blue);
     filter:hue-rotate(230deg);
 }
-.buttons .btn.postpone{
-    background: var(--blue);
-    filter:hue-rotate(230deg);
-}
-body:not(.dark) .buttons .btn.already-known,body:not(.dark) .buttons .btn.show-answer,body:not(.dark) .buttons .btn.postpone{
+body:not(.dark) .buttons .btn.show-answer{
     background: var(--dim-blue);
 }
 .buttons .btn:hover{

@@ -39,6 +39,7 @@
         </h1>
         <div class="btn camera glass nav-item nav-btn" data-screen="home"><svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M7.342 4.985c.422-.724.633-1.085.927-1.348a2.5 2.5 0 0 1 .898-.516C9.542 3 9.96 3 10.797 3h2.405c.838 0 1.256 0 1.631.121a2.5 2.5 0 0 1 .898.516c.294.263.505.624.927 1.348L17.25 6H18c1.4 0 2.1 0 2.635.272a2.5 2.5 0 0 1 1.092 1.093C22 7.9 22 8.6 22 10v6c0 1.4 0 2.1-.273 2.635a2.5 2.5 0 0 1-1.092 1.092C20.1 20 19.4 20 18 20H6c-1.4 0-2.1 0-2.635-.273a2.5 2.5 0 0 1-1.093-1.092C2 18.1 2 17.4 2 16v-6c0-1.4 0-2.1.272-2.635a2.5 2.5 0 0 1 1.093-1.093C3.9 6 4.6 6 6 6h.75l.592-1.015zM12 17.05a4.75 4.75 0 1 0 0-9.5 4.75 4.75 0 0 0 0 9.5zm2.7-4.75a2.7 2.7 0 1 1-5.4 0 2.7 2.7 0 0 1 5.4 0z" fill="currentColor"/></svg></div>
         <div class="btn bin glass nav-item nav-btn" data-screen="flashcards"><svg fill="currentColor" width="800px" height="800px" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg"><path d="M 4.1056 17.0898 L 51.8944 17.0898 C 54.5430 17.0898 55.8788 15.5196 55.8788 12.8945 L 55.8788 10.6211 C 55.8788 7.9961 54.5430 6.4258 51.8944 6.4258 L 4.1056 6.4258 C 1.5977 6.4258 .1212 7.9961 .1212 10.6211 L .1212 12.8945 C .1212 15.5196 1.4571 17.0898 4.1056 17.0898 Z M 15.7071 49.5742 L 40.2930 49.5742 C 44.9104 49.5742 46.7617 47.1367 47.4414 42.5899 L 50.7932 20.2774 L 5.2305 20.2774 L 8.5587 42.5899 C 9.2618 47.1602 11.0899 49.5742 15.7071 49.5742 Z M 21.2618 42.3320 C 20.2071 42.3320 19.3868 41.4649 19.3868 40.4336 C 19.3868 39.9180 19.5977 39.4961 19.9493 39.1445 L 25.3399 33.7071 L 19.9493 28.2461 C 19.5977 27.9180 19.3868 27.4727 19.3868 26.9571 C 19.3868 25.9492 20.2305 25.1289 21.2618 25.1289 C 21.7540 25.1289 22.1758 25.3398 22.5274 25.6680 L 27.9883 31.1055 L 33.4727 25.6445 C 33.8712 25.2930 34.2696 25.0820 34.7383 25.0820 C 35.7930 25.0820 36.6368 25.9023 36.6368 26.9571 C 36.6368 27.4492 36.4258 27.8477 36.0508 28.2227 L 30.6368 33.7071 L 36.0274 39.1211 C 36.3790 39.4961 36.6134 39.8945 36.6134 40.4336 C 36.6134 41.4649 35.7696 42.3320 34.7383 42.3320 C 34.1993 42.3320 33.7774 42.0742 33.4258 41.7461 L 27.9883 36.3320 L 22.5508 41.7461 C 22.2227 42.0977 21.7540 42.3320 21.2618 42.3320 Z"/></svg></div>
+        <div class="btn bury glass nav-item nav-btn" data-screen="flashcards"><svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 6V18M12 18L7 13M12 18L17 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
     </div>
 </div>
 <div class="content">
@@ -120,17 +121,10 @@
     <div class="btn hard glass" data-content="x">Hard</div>
     <div class="btn medium glass" data-content="x">Ok</div>
     <div class="btn easy glass" data-content="x">Easy</div>
-    <div class="btn postpone glass under-text" data-content="x">Show Later</div>
-    <div class="btn already-known glass under-text" data-content="x">Hide</div>
     <div class="btn show-answer glass">Show Answer</div>
 </div>
 
 
 <script src="app.js" type="module"></script>
-<script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js');
-    }
-</script>
 </body>
 </html>

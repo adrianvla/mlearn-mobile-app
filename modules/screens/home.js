@@ -1,23 +1,28 @@
+/**
+ * Home Screen Module
+ */
+
 import $ from '../../lib/jquery.min.js';
-import {displaySettingsScreen} from "./settings.js";
-import {displayScreen} from "./displayScreen.js";
-import {startConnectionByQR} from "../networking/startConnectionByQR.js";
-import {getFsLeft, review} from "../SRS/review.js";
+import { displaySettingsScreen } from './settings.js';
+import { displayScreen } from './displayScreen.js';
+import { startConnectionByQR } from '../networking/startConnectionByQR.js';
+import { getFsLeft, review } from '../SRS/review.js';
 
 let isInit = false;
-function init(){
-    $(".settings").on("click", displaySettingsScreen);
-    $(".camera").on("click",startConnectionByQR);
-    $("button.review").on("click",review);
+
+function init() {
+    $('.settings').on('click', displaySettingsScreen);
+    $('.camera').on('click', startConnectionByQR);
+    $('button.review').on('click', review);
 }
 
 export const displayHomeScreen = () => {
-    displayScreen("home");
-    $(".cards-left").text(getFsLeft());
+    displayScreen('home');
+    const count = getFsLeft();
+    $('.cards-left').text(count);
 
-
-    if(!isInit) {
+    if (!isInit) {
         init();
         isInit = true;
     }
-}
+};

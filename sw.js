@@ -1,10 +1,27 @@
-const CACHE_NAME = 'srs-cache-v1';
+const CACHE_NAME = 'srs-cache-v2';
 const ASSETS = [
     '/index.html',
     '/style.css',
     '/app.js',
     '/icon-192.png',
-    '/icon-512.png'
+    '/icon-512.png',
+    '/lib/jquery.min.js',
+    '/lib/jsqr.min.js',
+    '/lib/qrcode.js',
+    '/lib/simplepeer.min.js',
+    '/modules/init.js',
+    '/modules/common/pitchAccent.js',
+    '/modules/SRS/srsAlgorithm.js',
+    '/modules/SRS/storage.js',
+    '/modules/SRS/review.js',
+    '/modules/SRS/display.js',
+    '/modules/networking/transmit.js',
+    '/modules/networking/connectUsingData.js',
+    '/modules/networking/showQR.js',
+    '/modules/networking/startConnectionByQR.js',
+    '/modules/screens/home.js',
+    '/modules/screens/displayScreen.js',
+    '/modules/screens/settings.js',
 ];
 
 
