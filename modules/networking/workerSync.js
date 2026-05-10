@@ -1,8 +1,11 @@
 import { displayScreen } from '../screens/displayScreen.js';
 import { overwriteFlashcards, getFlashcards } from '../SRS/storage.js';
+import { getAccessToken, isAuthenticated } from './cloudAuth.js';
 
 const WORKER_API_URL = 'https://mlearn-cloud.kikan.net';
 const CHUNK_SIZE = 16000;
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 800;
 
 let socket = null;
 let receivedChunks = {};
@@ -11,7 +14,8 @@ let onCompleteCallback = null;
 let onErrorCallback = null;
 
 function buildSyncSocketUrl(roomId, role) {
-    return `wss://${new URL(WORKER_API_URL).host}/api/flashcard-sync/rooms/${roomId}/socket?_role=${role}`;
+    const accessToken = getAccessToken();
+    return `wss://${new URL(WORKER_API_URL).host}/api/flashcard-sync/rooms/${roomId}/socket?_role=${role}&_token=${encodeURIComponent(accessToken)}`;
 }
 
 function splitTextIntoChunks(text, chunkSize) {
@@ -28,53 +32,91 @@ function splitTextIntoChunks(text, chunkSize) {
     return chunks;
 }
 
+function stripMediaUrls(store) {
+    const stripped = JSON.parse(JSON.stringify(store));
+
+    for (const card of Object.values(stripped.flashcards || {})) {
+        if (card.content) {
+            delete card.content.imageUrl;
+            delete card.content.audioUrl;
+            delete card.content.videoUrl;
+        }
+    }
+
+    return stripped;
+}
+
 export async function createSyncRoom() {
+    const accessToken = getAccessToken();
     const response = await fetch(`${WORKER_API_URL}/api/flashcard-sync/rooms`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
         },
     });
 
     if (!response.ok) {
+        if (response.status === 401) {
+            throw new Error('Authentication required. Please sign in to sync.');
+        }
         throw new Error(`Failed to create sync room: ${response.status} ${response.statusText}`);
     }
 
     return response.json();
 }
 
+function connectWithRetry(url, role, onMessage) {
+    let retriesLeft = MAX_RETRIES;
+
+    const attempt = () => {
+        socket = new WebSocket(url, 'mlearn-flashcard-sync-v1');
+
+        socket.onopen = () => {
+            console.log(`[WorkerSync] Connected as ${role}`);
+        };
+
+        socket.onmessage = (event) => {
+            try {
+                const msg = JSON.parse(event.data);
+                onMessage(msg);
+            } catch (e) {
+                console.error('[WorkerSync] Invalid message:', e);
+            }
+        };
+
+        socket.onclose = () => {
+            console.log('[WorkerSync] Disconnected');
+        };
+
+        socket.onerror = (err) => {
+            console.error('[WorkerSync] WebSocket error:', err);
+            if (retriesLeft > 0) {
+                retriesLeft--;
+                socket = null;
+                setTimeout(attempt, RETRY_DELAY_MS);
+            } else if (onErrorCallback) {
+                onErrorCallback('WebSocket connection failed');
+            }
+        };
+    };
+
+    attempt();
+}
+
 export function connectAsReceiver(roomId, onComplete, onError) {
+    if (!isAuthenticated()) {
+        if (onError) onError('Authentication required. Please sign in to sync.');
+        return;
+    }
+
     onCompleteCallback = onComplete;
     onErrorCallback = onError;
     receivedChunks = {};
     totalChunksExpected = 0;
 
     const url = buildSyncSocketUrl(roomId, 'receiver');
-    socket = new WebSocket(url, 'mlearn-flashcard-sync-v1');
-
-    socket.onopen = () => {
-        console.log('[WorkerSync] Connected as receiver');
-    };
-
-    socket.onmessage = (event) => {
-        try {
-            const msg = JSON.parse(event.data);
-            handleReceiverMessage(msg);
-        } catch (e) {
-            console.error('[WorkerSync] Invalid message:', e);
-        }
-    };
-
-    socket.onclose = () => {
-        console.log('[WorkerSync] Disconnected');
-    };
-
-    socket.onerror = (err) => {
-        console.error('[WorkerSync] WebSocket error:', err);
-        if (onErrorCallback) {
-            onErrorCallback('WebSocket connection failed');
-        }
-    };
+    connectWithRetry(url, 'receiver', handleReceiverMessage);
 }
 
 export function connectAsSender(roomId, onComplete, onError) {
@@ -84,31 +126,7 @@ export function connectAsSender(roomId, onComplete, onError) {
     totalChunksExpected = 0;
 
     const url = buildSyncSocketUrl(roomId, 'sender');
-    socket = new WebSocket(url, 'mlearn-flashcard-sync-v1');
-
-    socket.onopen = () => {
-        console.log('[WorkerSync] Connected as sender');
-    };
-
-    socket.onmessage = (event) => {
-        try {
-            const msg = JSON.parse(event.data);
-            handleSenderMessage(msg);
-        } catch (e) {
-            console.error('[WorkerSync] Invalid message:', e);
-        }
-    };
-
-    socket.onclose = () => {
-        console.log('[WorkerSync] Disconnected');
-    };
-
-    socket.onerror = (err) => {
-        console.error('[WorkerSync] WebSocket error:', err);
-        if (onErrorCallback) {
-            onErrorCallback('WebSocket connection failed');
-        }
-    };
+    connectWithRetry(url, 'sender', handleSenderMessage);
 }
 
 function handleReceiverMessage(msg) {
@@ -210,7 +228,8 @@ function handleSenderMessage(msg) {
 let chunksToSend = [];
 
 function sendOffer() {
-    const storeData = JSON.stringify(getFlashcards());
+    const stripped = stripMediaUrls(getFlashcards());
+    const storeData = JSON.stringify(stripped);
     chunksToSend = splitTextIntoChunks(storeData, CHUNK_SIZE);
 
     socket.send(JSON.stringify({

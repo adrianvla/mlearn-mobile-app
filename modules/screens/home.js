@@ -15,9 +15,94 @@ import {
     setSyncMode,
 } from '../networking/syncService.js';
 import { connectAsReceiver } from '../networking/workerSync.js';
+import {
+    login,
+    register,
+    logout,
+    getUserEmail,
+    isAuthenticated,
+} from '../networking/cloudAuth.js';
 import jsQR from '../../lib/jsqr.min.js';
 
 let isInit = false;
+
+function updateAuthUI() {
+    const $authStatus = $('.auth-status');
+    const $loginBtn = $('.login-btn');
+
+    if (isAuthenticated()) {
+        $authStatus.text(getUserEmail() || 'Signed in');
+        $loginBtn.text('Sign Out');
+    } else {
+        $authStatus.text('Not signed in');
+        $loginBtn.text('Sign In');
+    }
+}
+
+function showLoginScreen() {
+    displayScreen('login');
+}
+
+function showHomeScreen() {
+    displayScreen('home');
+    updateAuthUI();
+}
+
+async function handleLoginSubmit() {
+    const email = $('.login-email').val()?.trim();
+    const password = $('.login-password').val();
+
+    if (!email || !password) {
+        alert('Please enter both email and password.');
+        return;
+    }
+
+    try {
+        await login(email, password);
+        $('.login-email').val('');
+        $('.login-password').val('');
+        showHomeScreen();
+    } catch (e) {
+        alert('Sign in failed: ' + e.message);
+    }
+}
+
+async function handleRegisterSubmit() {
+    const email = $('.login-email').val()?.trim();
+    const password = $('.login-password').val();
+
+    if (!email || !password) {
+        alert('Please enter both email and password.');
+        return;
+    }
+
+    if (password.length < 8) {
+        alert('Password must be at least 8 characters long.');
+        return;
+    }
+
+    try {
+        await register(email, password);
+        alert('Account created. Please sign in.');
+    } catch (e) {
+        alert('Registration failed: ' + e.message);
+    }
+}
+
+function handleLoginCancel() {
+    $('.login-email').val('');
+    $('.login-password').val('');
+    showHomeScreen();
+}
+
+function handleAuthButtonClick() {
+    if (isAuthenticated()) {
+        logout();
+        updateAuthUI();
+    } else {
+        showLoginScreen();
+    }
+}
 
 function updateSyncIndicator() {
     const status = getSyncStatus();
@@ -136,26 +221,31 @@ function startCameraForQR() {
                     }
                     displayScreen('home');
                     return;
-                } else if (scanned) {
-                    stopCameraFn();
-                    stopVideo = true;
-                    setSyncMode('p2p');
-                    updateSyncIndicator();
-                    displayScreen('connecting');
-                    connectAsReceiver(
-                        scanned,
-                        () => {
-                            console.log('Sync completed');
-                            updateSyncIndicator();
-                        },
-                        (err) => {
-                            console.error('Sync error:', err);
-                            alert('Sync failed: ' + err);
-                            displayScreen('home');
-                        }
-                    );
-                    return;
-                }
+                    } else if (scanned) {
+                        stopCameraFn();
+                        stopVideo = true;
+                        setSyncMode('p2p');
+                        updateSyncIndicator();
+                        displayScreen('connecting');
+                        connectAsReceiver(
+                            scanned,
+                            () => {
+                                console.log('Sync completed');
+                                updateSyncIndicator();
+                            },
+                            (err) => {
+                                console.error('Sync error:', err);
+                                if (err && err.includes && err.includes('Authentication required')) {
+                                    alert('Please sign in to sync flashcards.');
+                                    showLoginScreen();
+                                } else {
+                                    alert('Sync failed: ' + err);
+                                    displayScreen('home');
+                                }
+                            }
+                        );
+                        return;
+                    }
             }
         }
         requestAnimationFrame(tick);
@@ -166,6 +256,10 @@ function init() {
     $('.settings').on('click', displaySettingsScreen);
     $('.camera').on('click', startCameraForQR);
     $('button.review').on('click', review);
+    $('.login-btn').on('click', handleAuthButtonClick);
+    $('.login-submit').on('click', handleLoginSubmit);
+    $('.login-register').on('click', handleRegisterSubmit);
+    $('.login-cancel').on('click', handleLoginCancel);
 }
 
 export const displayHomeScreen = () => {
@@ -173,6 +267,7 @@ export const displayHomeScreen = () => {
     const count = getFsLeft();
     $('.cards-left').text(count);
     updateSyncIndicator();
+    updateAuthUI();
 
     if (!isInit) {
         init();
