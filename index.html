@@ -78,6 +78,7 @@
     <div class="status" data-screen="home">
         <h1>mLearn Flashcards</h1>
         <h2>You have <span class="cards-left">x</span> cards due.</h2>
+        <div class="sync-indicator">Offline</div>
         <button class="review">Review <span class="cards-left">x</span> flashcards</button>
     </div>
     <div class="screen" data-screen="settings">
@@ -86,7 +87,7 @@
         <h2>To update this app, <br>click on the update button.</h2>
     </div>
     <div class="camera" data-screen="camera">
-        <h1>Point this at <br>your computer's screen.</h1>
+        <h1>Scan the QR code<br>shown on your computer.</h1>
         <div class="progress-c">
             <div class="progress-bar">
                 <div class="easy"></div>
@@ -97,7 +98,7 @@
         <canvas id="qr-box"></canvas>
         <video id="qr-video" style="width:100%;max-width:400px;display:none;" autoplay></video>
     </div>
-    <div data-screen="loading-webrtc">
+    <div data-screen="loading-sync">
         <h1>Loading Network...</h1>
         <h1>Prepare to scan </h1>
         <h1>your phone </h1>

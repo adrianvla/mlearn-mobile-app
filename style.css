@@ -704,7 +704,7 @@ body.dark .pill{
 }
 
 
-.loading, .content > div:not(.card-c), .text{
+.loading, .content > div:not(.card-c), .text, [data-screen="loading-sync"], [data-screen="qr"], .connecting{
     color: #ccc;
     font-family: "Helvetica Neue", "Arial", sans-serif;
     font-size:0.75em;
@@ -751,7 +751,7 @@ body.dark .pill{
     height:100%;
 }
 
-.loading{
+.loading, [data-screen="loading-sync"], [data-screen="qr"]{
     z-index:999;
     position:fixed;
     top:0;
@@ -762,6 +762,23 @@ body.dark .pill{
     display:flex;
     justify-content: center;
     align-items: center;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.connecting{
+    z-index:999;
+    position:fixed;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    background: var(--background);
+    display:flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 10px;
 }
 
 
@@ -888,4 +905,72 @@ button{
 
 .subtitle_word{
     position:relative;
+}
+
+.sync-indicator {
+    font-family: "Helvetica Neue", "Arial", sans-serif;
+    font-size: 14px;
+    color: #888;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.settings-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 400px;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+.settings-group label {
+    font-family: "Helvetica Neue", "Arial", sans-serif;
+    font-size: 14px;
+    color: #ccc;
+    font-weight: bold;
+}
+
+.server-url-input {
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #444;
+    background: rgb(20, 25, 32);
+    color: #fff;
+    font-size: 16px;
+    font-family: "Helvetica Neue", "Arial", sans-serif;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+body:not(.dark) .server-url-input {
+    background: #eee;
+    color: #333;
+    border: 1px solid #aaa;
+}
+
+.settings-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.settings-buttons button {
+    flex: 1;
+    min-width: 100px;
+}
+
+.sync-status {
+    font-family: "Helvetica Neue", "Arial", sans-serif;
+    font-size: 14px;
+    color: #888;
+}
+
+.screen p {
+    font-family: "Helvetica Neue", "Arial", sans-serif;
+    font-size: 14px;
+    color: #888;
+    margin: 0;
+    text-align: center;
 }

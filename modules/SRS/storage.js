@@ -1,19 +1,26 @@
 /**
  * Flashcard Storage Module
  * Dual-layer persistence: IndexedDB (primary) with localStorage fallback.
- * Data format matches mlearn-ts FlashcardStore v3 (UUID-keyed flashcards).
+ * Data format matches mlearn-ts FlashcardStore v4 (UUID-keyed flashcards).
  */
 
 import { getDefaultMeta, generateUUID, hashWord } from './srsAlgorithm.js';
+import { queueFlashcardsPush, queueSettingsPush } from '../networking/syncService.js';
 
 const DB_NAME = "mlearn-pwa-storage";
-const DB_VERSION = 1;
+const DB_VERSION = 2; // bumped for settings store
 const STORE_NAME = "kv";
 const FLASHCARDS_KEY = "flashcards";
 const WORD_FREQ_KEY = "wordFreq";
-const CURRENT_STORE_VERSION = 3;
+const SETTINGS_KEY = "settings";
+const CURRENT_STORE_VERSION = 4;
 
 const DEFAULT_WORD_FREQ = {};
+
+const DEFAULT_SETTINGS = {
+    lastModified: 0,
+    serverUrl: '',
+};
 
 function buildDefaultStore() {
     return {
@@ -22,6 +29,11 @@ function buildDefaultStore() {
         wordToCardMap: {},
         wordStatsMap: {},
         knownUntracked: {},
+        ignoredWords: {},
+        wordKnowledge: {},
+        grammarKnowledge: {},
+        suggestedFlashcards: {},
+        wordSyncSeen: {},
         meta: getDefaultMeta(),
         dailyStats: {},
         version: CURRENT_STORE_VERSION,
@@ -119,6 +131,32 @@ async function migrateFromArrayFormat(oldData) {
     return store;
 }
 
+/* ── v3 → v4 migration ─────────────────────────────────────────────── */
+
+function migrateV3ToV4(store) {
+    if (!store || typeof store !== 'object') return buildDefaultStore();
+    if ((store.version || 0) >= 4) return store;
+
+    const migrated = {
+        ...store,
+        ignoredWords: store.ignoredWords || {},
+        wordKnowledge: store.wordKnowledge || {},
+        grammarKnowledge: store.grammarKnowledge || {},
+        suggestedFlashcards: store.suggestedFlashcards || {},
+        wordSyncSeen: store.wordSyncSeen || {},
+        version: CURRENT_STORE_VERSION,
+    };
+
+    // Ensure these are objects, not arrays or null
+    for (const key of ['ignoredWords', 'wordKnowledge', 'grammarKnowledge', 'suggestedFlashcards', 'wordSyncSeen']) {
+        if (!migrated[key] || typeof migrated[key] !== 'object' || Array.isArray(migrated[key])) {
+            migrated[key] = {};
+        }
+    }
+
+    return migrated;
+}
+
 /* ── Word stats helpers ────────────────────────────────────────────── */
 
 const STATE_ORDER = { 'new': 0, 'learning': 1, 'relearning': 2, 'review': 3 };
@@ -166,16 +204,24 @@ function normalizeStore(data) {
         Object.assign(knownUntracked, data.knownUnTracked);
     }
 
-    return {
+    const store = {
         flashcards,
         wordCandidates: (typeof data.wordCandidates === 'object' && data.wordCandidates !== null) ? data.wordCandidates : {},
         wordToCardMap: (typeof data.wordToCardMap === 'object' && data.wordToCardMap !== null) ? data.wordToCardMap : {},
         wordStatsMap: (typeof data.wordStatsMap === 'object' && data.wordStatsMap !== null) ? data.wordStatsMap : {},
         knownUntracked,
+        ignoredWords: (typeof data.ignoredWords === 'object' && data.ignoredWords !== null && !Array.isArray(data.ignoredWords)) ? data.ignoredWords : {},
+        wordKnowledge: (typeof data.wordKnowledge === 'object' && data.wordKnowledge !== null && !Array.isArray(data.wordKnowledge)) ? data.wordKnowledge : {},
+        grammarKnowledge: (typeof data.grammarKnowledge === 'object' && data.grammarKnowledge !== null && !Array.isArray(data.grammarKnowledge)) ? data.grammarKnowledge : {},
+        suggestedFlashcards: (typeof data.suggestedFlashcards === 'object' && data.suggestedFlashcards !== null && !Array.isArray(data.suggestedFlashcards)) ? data.suggestedFlashcards : {},
+        wordSyncSeen: (typeof data.wordSyncSeen === 'object' && data.wordSyncSeen !== null && !Array.isArray(data.wordSyncSeen)) ? data.wordSyncSeen : {},
         meta: { ...defaults.meta, ...(typeof data.meta === 'object' && data.meta !== null ? data.meta : {}) },
         dailyStats: (typeof data.dailyStats === 'object' && data.dailyStats !== null) ? data.dailyStats : {},
         version: typeof data.version === 'number' ? data.version : CURRENT_STORE_VERSION,
     };
+
+    // Run v3→v4 migration if needed
+    return migrateV3ToV4(store);
 }
 
 /* ── localStorage helpers ──────────────────────────────────────────── */
@@ -215,7 +261,7 @@ function isIndexedDBAvailable() {
 function openDatabase() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onupgradeneeded = () => {
+        request.onupgradeneeded = (event) => {
             const db = request.result;
             if (!db.objectStoreNames.contains(STORE_NAME)) {
                 db.createObjectStore(STORE_NAME);
@@ -253,6 +299,7 @@ function writeToIndexedDB(db, key, value) {
 
 let flashcardsCache = buildDefaultStore();
 let wordFreqCache = {};
+let settingsCache = { ...DEFAULT_SETTINGS };
 
 function initialLoad() {
     const rawFc = readFromLocalStorage(FLASHCARDS_KEY, null);
@@ -265,15 +312,28 @@ function initialLoad() {
     }
     const rawWf = readFromLocalStorage(WORD_FREQ_KEY, DEFAULT_WORD_FREQ);
     wordFreqCache = (typeof rawWf === 'object' && rawWf !== null) ? rawWf : {};
+
+    const rawSettings = readFromLocalStorage(SETTINGS_KEY, null);
+    settingsCache = normalizeSettings(rawSettings);
 }
 
 initialLoad();
 
+function normalizeSettings(data) {
+    if (!data || typeof data !== 'object') return { ...DEFAULT_SETTINGS };
+    return {
+        ...DEFAULT_SETTINGS,
+        ...data,
+        lastModified: typeof data.lastModified === 'number' ? data.lastModified : 0,
+    };
+}
+
 async function hydrateCacheFromIndexedDB(db) {
     try {
-        const [fc, wf] = await Promise.all([
+        const [fc, wf, settings] = await Promise.all([
             readFromIndexedDB(db, FLASHCARDS_KEY),
             readFromIndexedDB(db, WORD_FREQ_KEY),
+            readFromIndexedDB(db, SETTINGS_KEY),
         ]);
 
         if (fc) {
@@ -299,8 +359,19 @@ async function hydrateCacheFromIndexedDB(db) {
             await writeToIndexedDB(db, WORD_FREQ_KEY, wordFreqCache);
         }
 
+        if (settings) {
+            settingsCache = normalizeSettings(settings);
+        } else {
+            const rawLocalSettings = readFromLocalStorage(SETTINGS_KEY, null);
+            if (rawLocalSettings) {
+                settingsCache = normalizeSettings(rawLocalSettings);
+            }
+            await writeToIndexedDB(db, SETTINGS_KEY, settingsCache);
+        }
+
         removeFromLocalStorage(FLASHCARDS_KEY);
         removeFromLocalStorage(WORD_FREQ_KEY);
+        removeFromLocalStorage(SETTINGS_KEY);
     } catch (err) {
         console.warn('Failed to hydrate IndexedDB cache', err);
     }
@@ -360,6 +431,7 @@ export function getWordFreq() {
 export function overwriteFlashcards(store) {
     flashcardsCache = normalizeStore(store);
     persistValue(FLASHCARDS_KEY, flashcardsCache);
+    try { queueFlashcardsPush(flashcardsCache); } catch (_) {}
 }
 
 export function overwriteWordFreq(wf) {
@@ -369,4 +441,27 @@ export function overwriteWordFreq(wf) {
 
 export function saveFlashcards() {
     overwriteFlashcards(getFlashcards());
+}
+
+/* ── Settings API ──────────────────────────────────────────────────── */
+
+export function getSettings() {
+    return clone(settingsCache) || { ...DEFAULT_SETTINGS };
+}
+
+export function overwriteSettings(settings) {
+    settingsCache = normalizeSettings(settings);
+    persistValue(SETTINGS_KEY, settingsCache);
+    try { queueSettingsPush(settingsCache); } catch (_) {}
+}
+
+export function updateServerUrl(url) {
+    const settings = getSettings();
+    settings.serverUrl = url || '';
+    settings.lastModified = Date.now();
+    overwriteSettings(settings);
+}
+
+export function getServerUrl() {
+    return settingsCache.serverUrl || '';
 }

@@ -1,18 +1,39 @@
 import $ from '../lib/jquery.min.js';
-import {displayHomeScreen} from "./screens/home.js";
-import {storageReady} from "./SRS/storage.js";
+import { displayHomeScreen, updateSyncIndicator } from './screens/home.js';
+import { storageReady, getFlashcards, overwriteFlashcards, getSettings, overwriteSettings } from './SRS/storage.js';
+import { startSync } from './networking/syncService.js';
 
 export const init = async () => {
     try {
         await storageReady;
     } catch (err) {
-        console.warn("Storage not ready, continuing anyway", err);
+        console.warn('Storage not ready, continuing anyway', err);
     }
-    $(".loading").remove();
-    displayHomeScreen();
-    $(".close").on("click", displayHomeScreen);
-};
 
+    startSync({
+        onStatusChange: (status) => {
+            updateSyncIndicator();
+            const $settingsStatus = $('.screen[data-screen="settings"] .sync-status-text');
+            if ($settingsStatus.length) {
+                $settingsStatus.text(status);
+            }
+        },
+        onSettingsReceived: (remoteSettings) => {
+            overwriteSettings(remoteSettings);
+        },
+        onFlashcardsReceived: (mergedStore) => {
+            overwriteFlashcards(mergedStore);
+            const count = Object.keys(mergedStore.flashcards || {}).length;
+            $('.cards-left').text(count);
+        },
+        getLocalSettings: () => getSettings(),
+        getLocalFlashcards: () => getFlashcards(),
+    });
+
+    $('.loading').remove();
+    displayHomeScreen();
+    $('.close').on('click', displayHomeScreen);
+};
 
 const CSSifSafariFix = `
 .mLearn-pitch-accent{
@@ -25,13 +46,10 @@ const CSSifSafariFix = `
 `;
 function isSafari() {
     const ua = navigator.userAgent;
-
-    // Safari on iOS and macOS both include "Safari"
     const isSafari = /safari/i.test(ua);
     const isNotChrome = !/chrome|crios|crmo/i.test(ua);
     const isNotEdge = !/edg/i.test(ua);
     const isNotOpera = !/opr\//i.test(ua);
-
     return isSafari && isNotChrome && isNotEdge && isNotOpera;
 }
 
@@ -41,4 +59,4 @@ function injectCSS(cssText) {
     style.textContent = cssText;
     document.head.appendChild(style);
 }
-if(isSafari()) injectCSS(CSSifSafariFix);
+if (isSafari()) injectCSS(CSSifSafariFix);
