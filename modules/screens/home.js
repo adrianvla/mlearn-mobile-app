@@ -6,14 +6,6 @@ import $ from '../../lib/jquery.min.js';
 import { displaySettingsScreen } from './settings.js';
 import { displayScreen } from './displayScreen.js';
 import { getFsLeft, review } from '../SRS/review.js';
-import {
-    connectWithUrl,
-    triggerSync,
-    getSyncStatus,
-    getServerUrl,
-    getSyncMode,
-    setSyncMode,
-} from '../networking/syncService.js';
 import { connectAsReceiver } from '../networking/workerSync.js';
 import {
     login,
@@ -104,27 +96,6 @@ function handleAuthButtonClick() {
     }
 }
 
-function updateSyncIndicator() {
-    const status = getSyncStatus();
-    const mode = getSyncMode();
-    const serverUrl = getServerUrl();
-    const $indicator = $('.sync-indicator');
-
-    let text = 'Offline';
-    let color = '#888';
-
-    if (mode === 'tethered') {
-        if (status === 'syncing') { text = 'Syncing...'; color = '#5e84ff'; }
-        else if (status === 'synced') { text = serverUrl ? 'Synced' : 'Offline'; color = '#6d8867'; }
-        else if (status === 'error') { text = 'Sync Error'; color = '#9f554c'; }
-    } else if (mode === 'p2p') {
-        text = 'P2P Connected';
-        color = '#6d8867';
-    }
-
-    $indicator.text(text).css('color', color);
-}
-
 function startCameraForQR() {
     displayScreen('camera');
     $('.close').show();
@@ -209,43 +180,28 @@ function startCameraForQR() {
 
             if (code && code.data) {
                 const scanned = code.data.trim();
-                if (scanned && (scanned.startsWith('http://') || scanned.startsWith('https://'))) {
+                if (scanned) {
                     stopCameraFn();
                     stopVideo = true;
-                    try {
-                        await connectWithUrl(scanned);
-                        updateSyncIndicator();
-                        alert('Connected to ' + scanned);
-                    } catch (e) {
-                        alert('Connection failed: ' + e.message);
-                    }
-                    displayScreen('home');
-                    return;
-                    } else if (scanned) {
-                        stopCameraFn();
-                        stopVideo = true;
-                        setSyncMode('p2p');
-                        updateSyncIndicator();
-                        displayScreen('connecting');
-                        connectAsReceiver(
-                            scanned,
-                            () => {
-                                console.log('Sync completed');
-                                updateSyncIndicator();
-                            },
-                            (err) => {
-                                console.error('Sync error:', err);
-                                if (err && err.includes && err.includes('Authentication required')) {
-                                    alert('Please sign in to sync flashcards.');
-                                    showLoginScreen();
-                                } else {
-                                    alert('Sync failed: ' + err);
-                                    displayScreen('home');
-                                }
+                    displayScreen('connecting');
+                    connectAsReceiver(
+                        scanned,
+                        () => {
+                            console.log('Sync completed');
+                        },
+                        (err) => {
+                            console.error('Sync error:', err);
+                            if (err && err.includes && err.includes('Authentication required')) {
+                                alert('Please sign in to sync flashcards.');
+                                showLoginScreen();
+                            } else {
+                                alert('Sync failed: ' + err);
+                                displayScreen('home');
                             }
-                        );
-                        return;
-                    }
+                        }
+                    );
+                    return;
+                }
             }
         }
         requestAnimationFrame(tick);
@@ -266,7 +222,6 @@ export const displayHomeScreen = () => {
     displayScreen('home');
     const count = getFsLeft();
     $('.cards-left').text(count);
-    updateSyncIndicator();
     updateAuthUI();
 
     if (!isInit) {
@@ -274,5 +229,3 @@ export const displayHomeScreen = () => {
         isInit = true;
     }
 };
-
-export { updateSyncIndicator };

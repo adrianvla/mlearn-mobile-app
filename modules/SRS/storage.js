@@ -5,7 +5,6 @@
  */
 
 import { getDefaultMeta, generateUUID, hashWord } from './srsAlgorithm.js';
-import { queueFlashcardsPush, queueSettingsPush } from '../networking/syncService.js';
 
 const DB_NAME = "mlearn-pwa-storage";
 const DB_VERSION = 2; // bumped for settings store
@@ -19,7 +18,6 @@ const DEFAULT_WORD_FREQ = {};
 
 const DEFAULT_SETTINGS = {
     lastModified: 0,
-    serverUrl: '',
 };
 
 function buildDefaultStore() {
@@ -431,7 +429,6 @@ export function getWordFreq() {
 export function overwriteFlashcards(store) {
     flashcardsCache = normalizeStore(store);
     persistValue(FLASHCARDS_KEY, flashcardsCache);
-    try { queueFlashcardsPush(flashcardsCache); } catch (_) {}
 }
 
 export function overwriteWordFreq(wf) {
@@ -452,16 +449,6 @@ export function getSettings() {
 export function overwriteSettings(settings) {
     settingsCache = normalizeSettings(settings);
     persistValue(SETTINGS_KEY, settingsCache);
-    try { queueSettingsPush(settingsCache); } catch (_) {}
 }
 
-export function updateServerUrl(url) {
-    const settings = getSettings();
-    settings.serverUrl = url || '';
-    settings.lastModified = Date.now();
-    overwriteSettings(settings);
-}
 
-export function getServerUrl() {
-    return settingsCache.serverUrl || '';
-}

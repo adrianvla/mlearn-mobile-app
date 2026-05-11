@@ -704,7 +704,7 @@ body.dark .pill{
 }
 
 
-.loading, .content > div:not(.card-c), .text, [data-screen="loading-sync"], [data-screen="qr"], .connecting{
+.loading, .content > div:not(.card-c), .text, [data-screen="qr"], .connecting{
     color: #ccc;
     font-family: "Helvetica Neue", "Arial", sans-serif;
     font-size:0.75em;
@@ -728,8 +728,37 @@ body.dark .pill{
 }
 .screen{
     height:100%;
+    display: flex;
+    flex-direction: column;
     justify-content: start;
     align-items: center;
+    gap: 16px;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.login-screen input {
+    width: 100%;
+    max-width: 300px;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #444;
+    background: rgb(20, 25, 32);
+    color: #fff;
+    font-size: 16px;
+    font-family: "Helvetica Neue", "Arial", sans-serif;
+    box-sizing: border-box;
+}
+
+body:not(.dark) .login-screen input {
+    background: #eee;
+    color: #333;
+    border: 1px solid #aaa;
+}
+
+.login-screen button {
+    width: 100%;
+    max-width: 300px;
 }
 
 .status h1{
@@ -751,7 +780,7 @@ body.dark .pill{
     height:100%;
 }
 
-.loading, [data-screen="loading-sync"], [data-screen="qr"]{
+.loading, [data-screen="qr"]{
     z-index:999;
     position:fixed;
     top:0;
@@ -905,66 +934,6 @@ button{
 
 .subtitle_word{
     position:relative;
-}
-
-.sync-indicator {
-    font-family: "Helvetica Neue", "Arial", sans-serif;
-    font-size: 14px;
-    color: #888;
-    margin-top: 8px;
-    margin-bottom: 8px;
-}
-
-.settings-group {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    width: 100%;
-    max-width: 400px;
-    padding: 16px;
-    box-sizing: border-box;
-}
-
-.settings-group label {
-    font-family: "Helvetica Neue", "Arial", sans-serif;
-    font-size: 14px;
-    color: #ccc;
-    font-weight: bold;
-}
-
-.server-url-input {
-    padding: 12px;
-    border-radius: 10px;
-    border: 1px solid #444;
-    background: rgb(20, 25, 32);
-    color: #fff;
-    font-size: 16px;
-    font-family: "Helvetica Neue", "Arial", sans-serif;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-body:not(.dark) .server-url-input {
-    background: #eee;
-    color: #333;
-    border: 1px solid #aaa;
-}
-
-.settings-buttons {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.settings-buttons button {
-    flex: 1;
-    min-width: 100px;
-}
-
-.sync-status {
-    font-family: "Helvetica Neue", "Arial", sans-serif;
-    font-size: 14px;
-    color: #888;
 }
 
 .screen p {

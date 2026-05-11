@@ -1,7 +1,6 @@
 import $ from '../lib/jquery.min.js';
-import { displayHomeScreen, updateSyncIndicator } from './screens/home.js';
-import { storageReady, getFlashcards, overwriteFlashcards, getSettings, overwriteSettings } from './SRS/storage.js';
-import { startSync } from './networking/syncService.js';
+import { displayHomeScreen } from './screens/home.js';
+import { storageReady } from './SRS/storage.js';
 
 export const init = async () => {
     try {
@@ -9,26 +8,6 @@ export const init = async () => {
     } catch (err) {
         console.warn('Storage not ready, continuing anyway', err);
     }
-
-    startSync({
-        onStatusChange: (status) => {
-            updateSyncIndicator();
-            const $settingsStatus = $('.screen[data-screen="settings"] .sync-status-text');
-            if ($settingsStatus.length) {
-                $settingsStatus.text(status);
-            }
-        },
-        onSettingsReceived: (remoteSettings) => {
-            overwriteSettings(remoteSettings);
-        },
-        onFlashcardsReceived: (mergedStore) => {
-            overwriteFlashcards(mergedStore);
-            const count = Object.keys(mergedStore.flashcards || {}).length;
-            $('.cards-left').text(count);
-        },
-        getLocalSettings: () => getSettings(),
-        getLocalFlashcards: () => getFlashcards(),
-    });
 
     $('.loading').remove();
     displayHomeScreen();
