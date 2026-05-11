@@ -104,7 +104,7 @@ function connectWithRetry(url, role, onMessage) {
     attempt();
 }
 
-export function connectAsReceiver(roomId, onComplete, onError) {
+export async function connectAsReceiver(roomId, onComplete, onError) {
     if (!isAuthenticated()) {
         if (onError) onError('Authentication required. Please sign in to sync.');
         return;
@@ -116,6 +116,33 @@ export function connectAsReceiver(roomId, onComplete, onError) {
     totalChunksExpected = 0;
 
     const url = buildSyncSocketUrl(roomId, 'receiver');
+    console.log('[WorkerSync] Connecting to:', url);
+    
+    const accessToken = getAccessToken();
+    
+    try {
+        const healthCheck = await fetch(`${WORKER_API_URL}/api/health`);
+        console.log('[WorkerSync] Worker health:', healthCheck.status);
+    } catch (e) {
+        console.error('[WorkerSync] Worker health check failed:', e);
+    }
+    
+    try {
+        const roomCheck = await fetch(`${WORKER_API_URL}/api/flashcard-sync/rooms/${roomId}`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+        console.log('[WorkerSync] Room check status:', roomCheck.status);
+        if (!roomCheck.ok) {
+            const errorText = await roomCheck.text();
+            console.error('[WorkerSync] Room check failed:', roomCheck.status, errorText);
+        } else {
+            const roomData = await roomCheck.json();
+            console.log('[WorkerSync] Room check success:', roomData);
+        }
+    } catch (e) {
+        console.error('[WorkerSync] Room check error:', e);
+    }
+    
     connectWithRetry(url, 'receiver', handleReceiverMessage);
 }
 
