@@ -65,7 +65,18 @@ export async function register(email, password) {
         throw new Error(data.error || `Registration failed: ${response.status}`);
     }
 
-    return true;
+    const data = await response.json();
+
+    if (data.session && data.session.accessToken) {
+        accessToken = data.session.accessToken;
+        refreshToken = data.session.refreshToken || '';
+        userId = data.user?.id || '';
+        userEmail = data.user?.email || '';
+        persistAuth();
+        return { autoLoggedIn: true, requiresEmailConfirmation: false };
+    }
+
+    return { autoLoggedIn: false, requiresEmailConfirmation: data.requiresEmailConfirmation };
 }
 
 export async function refreshSession() {

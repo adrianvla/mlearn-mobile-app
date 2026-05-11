@@ -40,12 +40,21 @@ function showHomeScreen() {
     updateAuthUI();
 }
 
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 async function handleLoginSubmit() {
     const email = $('.login-email').val()?.trim();
     const password = $('.login-password').val();
 
     if (!email || !password) {
         alert('Please enter both email and password.');
+        return;
+    }
+
+    if (!isValidEmail(email)) {
+        alert('Please enter a valid email address.');
         return;
     }
 
@@ -68,14 +77,27 @@ async function handleRegisterSubmit() {
         return;
     }
 
+    if (!isValidEmail(email)) {
+        alert('Please enter a valid email address.');
+        return;
+    }
+
     if (password.length < 8) {
         alert('Password must be at least 8 characters long.');
         return;
     }
 
     try {
-        await register(email, password);
-        alert('Account created. Please sign in.');
+        const result = await register(email, password);
+        if (result.autoLoggedIn) {
+            $('.login-email').val('');
+            $('.login-password').val('');
+            showHomeScreen();
+        } else if (result.requiresEmailConfirmation) {
+            alert('Account created. Please check your email to confirm your account, then sign in.');
+        } else {
+            alert('Account created. Please sign in.');
+        }
     } catch (e) {
         alert('Registration failed: ' + e.message);
     }
