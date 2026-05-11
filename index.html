@@ -99,15 +99,10 @@
     </div>
     <div class="camera" data-screen="camera">
         <h1>Scan the QR code<br>shown on your computer.</h1>
-        <div class="progress-c">
-            <div class="progress-bar">
-                <div class="easy"></div>
-                <div class="medium"></div>
-                <div class="hard"></div>
-            </div>
+        <div class="video-container">
+            <video id="qr-video" playsinline autoplay muted></video>
+            <canvas id="qr-box"></canvas>
         </div>
-        <canvas id="qr-box"></canvas>
-        <video id="qr-video" style="width:100%;max-width:400px;display:none;" autoplay></video>
     </div>
     <div class="connecting" data-screen="connecting">
         <h1>Connected!</h1>
