@@ -42,6 +42,13 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+    const url = new URL(event.request.url);
+    const isApiCall = url.hostname !== self.location.hostname || url.pathname.startsWith('/api/');
+
+    if (isApiCall) {
+        return;
+    }
+
     event.respondWith(
         caches.match(event.request, { ignoreSearch: true })
             .then(response => response || fetch(event.request).catch(() => caches.match('/index.html')))
