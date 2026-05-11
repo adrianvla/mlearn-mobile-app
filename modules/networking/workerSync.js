@@ -14,8 +14,7 @@ let onCompleteCallback = null;
 let onErrorCallback = null;
 
 function buildSyncSocketUrl(roomId, role) {
-    const accessToken = getAccessToken();
-    return `wss://${new URL(WORKER_API_URL).host}/api/flashcard-sync/rooms/${roomId}/socket?_role=${role}&_token=${encodeURIComponent(accessToken)}`;
+    return `wss://${new URL(WORKER_API_URL).host}/api/flashcard-sync/rooms/${roomId}/socket?_role=${role}`;
 }
 
 function splitTextIntoChunks(text, chunkSize) {
@@ -70,7 +69,8 @@ function connectWithRetry(url, role, onMessage) {
     let retriesLeft = MAX_RETRIES;
 
     const attempt = () => {
-        socket = new WebSocket(url, 'mlearn-flashcard-sync-v1');
+        const accessToken = getAccessToken();
+        socket = new WebSocket(url, ['mlearn-flashcard-sync-v1', accessToken]);
 
         socket.onopen = () => {
             console.log(`[WorkerSync] Connected as ${role}`);
@@ -85,8 +85,8 @@ function connectWithRetry(url, role, onMessage) {
             }
         };
 
-        socket.onclose = () => {
-            console.log('[WorkerSync] Disconnected');
+        socket.onclose = (event) => {
+            console.log('[WorkerSync] Disconnected - code:', event.code, 'reason:', event.reason);
         };
 
         socket.onerror = (err) => {
@@ -96,7 +96,7 @@ function connectWithRetry(url, role, onMessage) {
                 socket = null;
                 setTimeout(attempt, RETRY_DELAY_MS);
             } else if (onErrorCallback) {
-                onErrorCallback('WebSocket connection failed');
+                onErrorCallback('WebSocket connection failed (code: ' + (socket?.readyState || 'unknown') + ')');
             }
         };
     };
