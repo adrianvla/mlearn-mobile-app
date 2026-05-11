@@ -120,6 +120,11 @@ export function connectAsReceiver(roomId, onComplete, onError) {
 }
 
 export function connectAsSender(roomId, onComplete, onError) {
+    if (!isAuthenticated()) {
+        if (onError) onError('Authentication required. Please sign in to sync.');
+        return;
+    }
+
     onCompleteCallback = onComplete;
     onErrorCallback = onError;
     receivedChunks = {};
