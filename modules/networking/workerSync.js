@@ -1,6 +1,6 @@
 import { displayScreen } from '../screens/displayScreen.js';
 import { overwriteFlashcards, getFlashcards } from '../SRS/storage.js';
-import { getAccessToken, isAuthenticated } from './cloudAuth.js';
+import { getAccessToken, isAuthenticated, refreshSession } from './cloudAuth.js';
 
 const WORKER_API_URL = 'https://mlearn-cloud.kikan.net';
 const CHUNK_SIZE = 16000;
@@ -117,36 +117,56 @@ export async function connectAsReceiver(roomId, onComplete, onError) {
 
     const url = buildSyncSocketUrl(roomId, 'receiver');
     console.log('[WorkerSync] Connecting to:', url);
-    
-    const accessToken = getAccessToken();
-    
+
+    let accessToken = getAccessToken();
+
     try {
         const healthCheck = await fetch(`${WORKER_API_URL}/api/health`);
         console.log('[WorkerSync] Worker health:', healthCheck.status);
     } catch (e) {
         console.error('[WorkerSync] Worker health check failed:', e);
     }
-    
+
     try {
-        const roomCheck = await fetch(`${WORKER_API_URL}/api/flashcard-sync/rooms/${roomId}`, {
+        let roomCheck = await fetch(`${WORKER_API_URL}/api/flashcard-sync/rooms/${roomId}`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
+
+        if (roomCheck.status === 401) {
+            console.log('[WorkerSync] Token expired, attempting refresh...');
+            try {
+                await refreshSession();
+                accessToken = getAccessToken();
+                roomCheck = await fetch(`${WORKER_API_URL}/api/flashcard-sync/rooms/${roomId}`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+            } catch (refreshErr) {
+                console.error('[WorkerSync] Session refresh failed:', refreshErr);
+                if (onError) onError('Authentication required. Please sign in to sync.');
+                return;
+            }
+        }
+
         console.log('[WorkerSync] Room check status:', roomCheck.status);
         if (!roomCheck.ok) {
             const errorText = await roomCheck.text();
             console.error('[WorkerSync] Room check failed:', roomCheck.status, errorText);
+            if (onError) onError(`Room check failed: ${roomCheck.status}`);
+            return;
         } else {
             const roomData = await roomCheck.json();
             console.log('[WorkerSync] Room check success:', roomData);
         }
     } catch (e) {
         console.error('[WorkerSync] Room check error:', e);
+        if (onError) onError('Network error during room check');
+        return;
     }
-    
+
     connectWithRetry(url, 'receiver', handleReceiverMessage);
 }
 
-export function connectAsSender(roomId, onComplete, onError) {
+export async function connectAsSender(roomId, onComplete, onError) {
     if (!isAuthenticated()) {
         if (onError) onError('Authentication required. Please sign in to sync.');
         return;
@@ -158,6 +178,41 @@ export function connectAsSender(roomId, onComplete, onError) {
     totalChunksExpected = 0;
 
     const url = buildSyncSocketUrl(roomId, 'sender');
+
+    let accessToken = getAccessToken();
+
+    try {
+        let roomCheck = await fetch(`${WORKER_API_URL}/api/flashcard-sync/rooms/${roomId}`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
+
+        if (roomCheck.status === 401) {
+            console.log('[WorkerSync] Token expired, attempting refresh...');
+            try {
+                await refreshSession();
+                accessToken = getAccessToken();
+                roomCheck = await fetch(`${WORKER_API_URL}/api/flashcard-sync/rooms/${roomId}`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+            } catch (refreshErr) {
+                console.error('[WorkerSync] Session refresh failed:', refreshErr);
+                if (onError) onError('Authentication required. Please sign in to sync.');
+                return;
+            }
+        }
+
+        if (!roomCheck.ok) {
+            const errorText = await roomCheck.text();
+            console.error('[WorkerSync] Room check failed:', roomCheck.status, errorText);
+            if (onError) onError(`Room check failed: ${roomCheck.status}`);
+            return;
+        }
+    } catch (e) {
+        console.error('[WorkerSync] Room check error:', e);
+        if (onError) onError('Network error during room check');
+        return;
+    }
+
     connectWithRetry(url, 'sender', handleSenderMessage);
 }
 
