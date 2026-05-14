@@ -250,7 +250,7 @@ export function startCameraForQR() {
 
 function init() {
     $('.settings').on('click', displaySettingsScreen);
-    $('.camera').on('click', startCameraForQR);
+    $('.sync-btn').on('click', startCameraForQR);
     $('button.review').on('click', review);
     $('.login-btn').on('click', handleAuthButtonClick);
     $('.login-submit').on('click', handleLoginSubmit);
