@@ -122,22 +122,34 @@ export function startCameraForQR() {
     displayScreen('camera');
     $('.close').show();
     const video = document.getElementById('qr-video');
-    if (!video) return;
+    if (!video) {
+        console.error('[Camera] Video element not found');
+        return;
+    }
     video.style.display = 'block';
 
     let stream = null;
     let stopVideo = false;
-    let stopCameraFn = null;
+    let stopCameraFn = () => {};
+
+    $('.close').off('click.qr').on('click.qr', () => {
+        stopCameraFn();
+        stopVideo = true;
+        displayScreen('home');
+    });
 
     navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
         .then(s => {
             stream = s;
             video.srcObject = stream;
-            video.setAttribute('playsinline', true);
-            video.play();
+            video.setAttribute('playsinline', 'true');
+            video.play().catch(err => {
+                console.error('[Camera] Video play failed:', err);
+            });
             requestAnimationFrame(tick);
         })
         .catch(err => {
+            console.error('[Camera] getUserMedia failed:', err);
             alert('Camera access denied or not available.');
             displayScreen('home');
         });
@@ -147,14 +159,9 @@ export function startCameraForQR() {
             stream.getTracks().forEach(track => track.stop());
         }
         video.style.display = 'none';
+        video.srcObject = null;
         $(video).off();
     };
-
-    $('.close').off('click.qr').on('click.qr', () => {
-        stopCameraFn();
-        stopVideo = true;
-        displayScreen('home');
-    });
 
     function drawQR(qr) {
         const canvas = document.getElementById('qr-box');

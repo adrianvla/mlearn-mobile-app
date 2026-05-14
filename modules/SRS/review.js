@@ -495,7 +495,21 @@ export const review = () => {
                 break;
             }
             case 'reset': {
-                location.reload();
+                (async () => {
+                    if ('serviceWorker' in navigator) {
+                        const regs = await navigator.serviceWorker.getRegistrations();
+                        for (const reg of regs) {
+                            await reg.unregister();
+                        }
+                    }
+                    if ('caches' in window) {
+                        const cacheNames = await caches.keys();
+                        for (const name of cacheNames) {
+                            await caches.delete(name);
+                        }
+                    }
+                    window.location.reload();
+                })();
                 break;
             }
             case 'bury': {
