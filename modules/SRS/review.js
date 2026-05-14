@@ -38,6 +38,7 @@ export function getFsLeft() {
 
 export const review = () => {
     displayScreen('flashcards');
+    $('.burger-dropdown').removeClass('open');
     let store = getFlashcards();
     if (!store || typeof store.flashcards !== 'object' || Object.keys(store.flashcards).length === 0) {
         displayHomeScreen();
