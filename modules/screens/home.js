@@ -206,10 +206,21 @@ function startCameraForQR() {
                     stopCameraFn();
                     stopVideo = true;
                     displayScreen('connecting');
+
+                    let roomId = scanned;
+                    let roomCode = '';
+                    const colonIndex = scanned.lastIndexOf(':');
+                    if (colonIndex > 0) {
+                        roomId = scanned.substring(0, colonIndex);
+                        roomCode = scanned.substring(colonIndex + 1);
+                    }
+
                     connectAsReceiver(
-                        scanned,
+                        roomId,
+                        roomCode,
                         () => {
                             console.log('Sync completed');
+                            displayHomeScreen();
                         },
                         (err) => {
                             console.error('Sync error:', err);

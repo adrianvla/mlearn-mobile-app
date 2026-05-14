@@ -12,9 +12,15 @@ let receivedChunks = {};
 let totalChunksExpected = 0;
 let onCompleteCallback = null;
 let onErrorCallback = null;
+let syncCompleted = false;
 
-function buildSyncSocketUrl(roomId, role) {
-    return `wss://${new URL(WORKER_API_URL).host}/api/flashcard-sync/rooms/${roomId}/socket?_role=${role}`;
+function buildSyncSocketUrl(roomId, role, roomCode) {
+    const url = new URL(`wss://${new URL(WORKER_API_URL).host}/api/flashcard-sync/rooms/${roomId}/socket`);
+    url.searchParams.set('_role', role);
+    if (roomCode) {
+        url.searchParams.set('_roomCode', roomCode);
+    }
+    return url.toString();
 }
 
 function splitTextIntoChunks(text, chunkSize) {
@@ -104,7 +110,7 @@ function connectWithRetry(url, role, onMessage) {
     attempt();
 }
 
-export async function connectAsReceiver(roomId, onComplete, onError) {
+export async function connectAsReceiver(roomId, roomCode, onComplete, onError) {
     if (!isAuthenticated()) {
         if (onError) onError('Authentication required. Please sign in to sync.');
         return;
@@ -114,8 +120,9 @@ export async function connectAsReceiver(roomId, onComplete, onError) {
     onErrorCallback = onError;
     receivedChunks = {};
     totalChunksExpected = 0;
+    syncCompleted = false;
 
-    const url = buildSyncSocketUrl(roomId, 'receiver');
+    const url = buildSyncSocketUrl(roomId, 'receiver', roomCode);
     console.log('[WorkerSync] Connecting to:', url);
 
     let accessToken = getAccessToken();
@@ -128,7 +135,11 @@ export async function connectAsReceiver(roomId, onComplete, onError) {
     }
 
     try {
-        let roomCheck = await fetch(`${WORKER_API_URL}/api/flashcard-sync/rooms/${roomId}`, {
+        let roomCheckUrl = `${WORKER_API_URL}/api/flashcard-sync/rooms/${roomId}`;
+        if (roomCode) {
+            roomCheckUrl += `?_roomCode=${encodeURIComponent(roomCode)}`;
+        }
+        let roomCheck = await fetch(roomCheckUrl, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
 
@@ -137,7 +148,7 @@ export async function connectAsReceiver(roomId, onComplete, onError) {
             try {
                 await refreshSession();
                 accessToken = getAccessToken();
-                roomCheck = await fetch(`${WORKER_API_URL}/api/flashcard-sync/rooms/${roomId}`, {
+                roomCheck = await fetch(roomCheckUrl, {
                     headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
             } catch (refreshErr) {
@@ -166,7 +177,7 @@ export async function connectAsReceiver(roomId, onComplete, onError) {
     connectWithRetry(url, 'receiver', handleReceiverMessage);
 }
 
-export async function connectAsSender(roomId, onComplete, onError) {
+export async function connectAsSender(roomId, roomCode, onComplete, onError) {
     if (!isAuthenticated()) {
         if (onError) onError('Authentication required. Please sign in to sync.');
         return;
@@ -176,13 +187,18 @@ export async function connectAsSender(roomId, onComplete, onError) {
     onErrorCallback = onError;
     receivedChunks = {};
     totalChunksExpected = 0;
+    syncCompleted = false;
 
-    const url = buildSyncSocketUrl(roomId, 'sender');
+    const url = buildSyncSocketUrl(roomId, 'sender', roomCode);
 
     let accessToken = getAccessToken();
 
     try {
-        let roomCheck = await fetch(`${WORKER_API_URL}/api/flashcard-sync/rooms/${roomId}`, {
+        let roomCheckUrl = `${WORKER_API_URL}/api/flashcard-sync/rooms/${roomId}`;
+        if (roomCode) {
+            roomCheckUrl += `?_roomCode=${encodeURIComponent(roomCode)}`;
+        }
+        let roomCheck = await fetch(roomCheckUrl, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
 
@@ -191,7 +207,7 @@ export async function connectAsSender(roomId, onComplete, onError) {
             try {
                 await refreshSession();
                 accessToken = getAccessToken();
-                roomCheck = await fetch(`${WORKER_API_URL}/api/flashcard-sync/rooms/${roomId}`, {
+                roomCheck = await fetch(roomCheckUrl, {
                     headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
             } catch (refreshErr) {
@@ -245,6 +261,7 @@ function handleReceiverMessage(msg) {
         }
 
         case 'complete': {
+            syncCompleted = true;
             if (onCompleteCallback) {
                 onCompleteCallback();
             }
@@ -261,6 +278,10 @@ function handleReceiverMessage(msg) {
         }
 
         case 'peer_disconnected': {
+            if (syncCompleted) {
+                disconnect();
+                return;
+            }
             if (onErrorCallback) {
                 onErrorCallback('Peer disconnected');
             }
@@ -287,6 +308,7 @@ function handleSenderMessage(msg) {
         }
 
         case 'complete': {
+            syncCompleted = true;
             if (onCompleteCallback) {
                 onCompleteCallback();
             }
@@ -303,6 +325,10 @@ function handleSenderMessage(msg) {
         }
 
         case 'peer_disconnected': {
+            if (syncCompleted) {
+                disconnect();
+                return;
+            }
             if (onErrorCallback) {
                 onErrorCallback('Peer disconnected');
             }
@@ -375,19 +401,28 @@ function completeReceive() {
         }
     }
 
+    syncCompleted = true;
     disconnect();
 }
 
 function updateProgress(current, total) {
     const percent = total > 0 ? (current / total) * 100 : 0;
-    const progressBar = document.querySelector('.sync-progress-bar');
-    if (progressBar) {
-        progressBar.style.width = percent + '%';
+    const progressFill = document.querySelector('.sync-progress-fill');
+    const progressText = document.querySelector('.sync-progress-text');
+    if (progressFill) {
+        progressFill.style.width = percent + '%';
+    }
+    if (progressText) {
+        progressText.textContent = `${Math.round(percent)}%`;
     }
 }
 
 export function disconnect() {
     if (socket) {
+        socket.onopen = null;
+        socket.onmessage = null;
+        socket.onclose = null;
+        socket.onerror = null;
         socket.close();
         socket = null;
     }

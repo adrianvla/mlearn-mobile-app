@@ -810,6 +810,36 @@ body:not(.dark) .login-screen input {
     gap: 10px;
 }
 
+.sync-progress-container{
+    width:80%;
+    max-width:400px;
+    display:flex;
+    flex-direction: column;
+    align-items: center;
+    gap:8px;
+}
+
+.sync-progress-track{
+    width:100%;
+    height:12px;
+    border-radius:100px;
+    overflow:hidden;
+    background:rgb(20,25,32);
+    border:1px solid rgb(40,50,60);
+}
+
+.sync-progress-fill{
+    height:100%;
+    background:var(--green);
+    transition:width 0.2s ease;
+    border-radius:100px;
+}
+
+.sync-progress-text{
+    color:#ccc;
+    font-family:"Helvetica Neue","Arial",sans-serif;
+    font-size:14px;
+}
 
 button{
     padding:10px;
