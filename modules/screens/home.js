@@ -118,7 +118,7 @@ function handleAuthButtonClick() {
     }
 }
 
-function startCameraForQR() {
+export function startCameraForQR() {
     displayScreen('camera');
     $('.close').show();
     const video = document.getElementById('qr-video');

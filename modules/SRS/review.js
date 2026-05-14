@@ -12,7 +12,7 @@ import {
 } from './srsAlgorithm.js';
 import { displayFlashcard, revealAnswer, addPitchAccent, getWord, getReading } from './display.js';
 import $ from '../../lib/jquery.min.js';
-import { displayHomeScreen } from '../screens/home.js';
+import { displayHomeScreen, startCameraForQR } from '../screens/home.js';
 import { displayScreen } from '../screens/displayScreen.js';
 
 const MAX_UNDO_STACK_SIZE = 50;
@@ -79,6 +79,7 @@ export const review = () => {
 
         $('.btn.again,.btn.hard,.btn.medium,.btn.easy').hide();
         $('.btn.show-answer').show();
+        $('.review-zones').removeClass('active').hide();
 
         currentCard = getNextCard(queue, store.flashcards);
         if (!currentCard) {
@@ -96,6 +97,14 @@ export const review = () => {
         $('.btn.medium').attr('data-content', dueDateToString(previews.good));
         $('.btn.easy').attr('data-content', dueDateToString(previews.easy));
     }
+
+    const revealCurrentCard = () => {
+        if (!currentCard) return;
+        $('.btn.again,.btn.hard,.btn.medium,.btn.easy').show();
+        $('.btn.show-answer').hide();
+        $('.review-zones').addClass('active').show();
+        revealAnswer(currentCard);
+    };
 
     refreshDisplay();
 
@@ -404,8 +413,8 @@ export const review = () => {
             case '2': $('.btn.hard').click(); break;
             case '3': $('.btn.medium').click(); break;
             case '4': $('.btn.easy').click(); break;
-            case 'b': $('.btn.bury').click(); break;
-            case 'x': $('.btn.bin').click(); break;
+            case 'b': buryCurrentCard(); break;
+            case 'x': removeFlashcard(true); break;
             case ' ': e.preventDefault(); $('.btn.show-answer').click(); break;
         }
     });
@@ -416,35 +425,96 @@ export const review = () => {
     $('.btn.hard').off('click').on('click', () => doAnswer('hard'));
     $('.btn.medium').off('click').on('click', () => doAnswer('good'));
     $('.btn.easy').off('click').on('click', () => doAnswer('easy'));
-    $('.btn.bury').off('click').on('click', buryCurrentCard);
-    $('.btn.bin').off('click').on('click', () => removeFlashcard(true));
 
-    $('.btn.show-answer').off('click').on('click', () => {
-        if (!currentCard) return;
-        $('.btn.again,.btn.hard,.btn.medium,.btn.easy').show();
-        $('.btn.show-answer').hide();
-        revealAnswer(currentCard);
+    $('.btn.show-answer').off('click').on('click', revealCurrentCard);
+
+    $('.card-c').off('click.review').on('click.review', (e) => {
+        if (isInEditMode || isInCreateMode) return;
+        if ($('.btn.show-answer').is(':visible')) {
+            e.preventDefault();
+            e.stopPropagation();
+            revealCurrentCard();
+        }
+    });
+
+    $('.review-zone-left').off('click').on('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        doAnswer('again');
+    });
+
+    $('.review-zone-right').off('click').on('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        doAnswer('easy');
+    });
+
+    const $burgerDropdown = $('.burger-dropdown');
+
+    const closeBurger = () => {
+        $burgerDropdown.removeClass('open');
+    };
+
+    const toggleBurger = () => {
+        $burgerDropdown.toggleClass('open');
+    };
+
+    $('.btn.burger-menu').off('click').on('click', (e) => {
+        e.stopPropagation();
+        toggleBurger();
+    });
+
+    $document.off('click.burger-close');
+    $document.on('click.burger-close', () => {
+        closeBurger();
+    });
+
+    $burgerDropdown.off('click');
+    $burgerDropdown.on('click', '.burger-item', function() {
+        const action = $(this).attr('data-action');
+        closeBurger();
+        switch (action) {
+            case 'edit': {
+                if (isInEditMode) {
+                    exitEditMode();
+                } else {
+                    enterEditMode();
+                }
+                break;
+            }
+            case 'add': {
+                if (isInCreateMode) {
+                    exitCreateMode();
+                } else {
+                    enterCreateMode();
+                }
+                break;
+            }
+            case 'sync': {
+                startCameraForQR();
+                break;
+            }
+            case 'reset': {
+                location.reload();
+                break;
+            }
+            case 'bury': {
+                buryCurrentCard();
+                break;
+            }
+            case 'delete': {
+                removeFlashcard(true);
+                break;
+            }
+        }
     });
 
     $('.btn.close').off('click').on('click', () => {
         $document.off('keydown.review');
+        $document.off('click.burger-close');
+        closeBurger();
         displayHomeScreen();
     });
 
     $('.editMode').hide();
-    $('.btn.edit').off('click').on('click', () => {
-        if (isInEditMode) {
-            exitEditMode();
-        } else {
-            enterEditMode();
-        }
-    });
-
-    $addFlashcardBtn.off('click').on('click', () => {
-        if (isInCreateMode) {
-            exitCreateMode();
-        } else {
-            enterCreateMode();
-        }
-    });
 };
