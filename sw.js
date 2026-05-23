@@ -1,4 +1,4 @@
-const CACHE_NAME = 'srs-cache-v2';
+const CACHE_NAME = 'srs-cache-v3';
 const ASSETS = [
     '/index.html',
     '/style.css',
@@ -19,6 +19,7 @@ const ASSETS = [
     '/modules/screens/home.js',
     '/modules/screens/displayScreen.js',
     '/modules/screens/settings.js',
+
 ];
 
 
@@ -38,6 +39,13 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
+    event.waitUntil(
+        caches.keys().then(names => {
+            return Promise.all(
+                names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n))
+            );
+        })
+    );
     event.waitUntil(self.clients.claim());
 });
 
